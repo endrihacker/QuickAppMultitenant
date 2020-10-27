@@ -25,6 +25,7 @@ using QuickApp.Helpers;
 using System;
 using System.Collections.Generic;
 using AppPermissions = DAL.Core.ApplicationPermissions;
+using Finbuckle.MultiTenant;
 
 namespace QuickApp
 {
@@ -44,8 +45,29 @@ namespace QuickApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Add cors
+            services.AddCors();
+
+            services.AddControllersWithViews();
+
+            //services.AddDbContext<MultiTenantStoreDbContext>(options =>
+            //    options.UseSqlServer(Configuration["ConnectionStrings:DefaultConnection"], b => b.MigrationsAssembly("QuickApp")));
+
+            // Add multitenacy -> be careful to register multitenant aware components after multitenancy is added
+            services.AddMultiTenant<ExtendedTenantInfo>()
+                    .WithConfigurationStore()
+                    //.WithEFCoreStore<MultiTenantStoreDbContext, ExtendedTenantInfo>()
+                    .WithClaimStrategy()
+                    .WithRouteStrategy()
+                    .WithStaticStrategy("finbuckle");   // optional for default strategy after all other strategies registered
+
+            //services.AddMultiTenant<TenantInfo>()
+            //        .WithConfigurationStore()
+            //        .WithStaticStrategy("dev");
+
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration["ConnectionStrings:DefaultConnection"], b => b.MigrationsAssembly("QuickApp")));
+            //services.AddDbContext<ApplicationDbContext>();
 
             // add identity
             services.AddIdentity<ApplicationUser, ApplicationRole>()
@@ -110,11 +132,6 @@ namespace QuickApp
                 options.AddPolicy(Authorization.Policies.AssignAllowedRolesPolicy, policy => policy.Requirements.Add(new AssignRolesAuthorizationRequirement()));
             });
 
-
-            // Add cors
-            services.AddCors();
-
-            services.AddControllersWithViews();
 
             // In production, the Angular files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
@@ -193,6 +210,10 @@ namespace QuickApp
             }
 
             app.UseRouting();
+
+            // Use Multitenancy be careful to add this after UseRouting
+            app.UseMultiTenant();
+
             app.UseCors(builder => builder
                 .AllowAnyOrigin()
                 .AllowAnyHeader()
@@ -213,6 +234,9 @@ namespace QuickApp
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(
+                    name: "tenant",
+                    pattern: "{__tenant__=}/{controller}/{action=Index}/{id?}");
+                endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
             });
@@ -231,6 +255,12 @@ namespace QuickApp
                     //spa.UseProxyToSpaDevelopmentServer("http://localhost:4200"); // Use this instead to use the angular cli server
                 }
             });
+
+
+            // Seed the database the multitenant store will need.
+            // database is already created
+            //SetupStore(app.ApplicationServices);
+
         }
     }
 }

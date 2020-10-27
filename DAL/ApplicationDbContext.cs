@@ -13,11 +13,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using DAL.Models.Interfaces;
+using Finbuckle.MultiTenant;
+using Microsoft.AspNetCore.Http;
 
 namespace DAL
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
     {
+        private ITenantInfo TenantInfo { get; set; }
+
         public string CurrentUserId { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<ProductCategory> ProductCategories { get; set; }
@@ -27,10 +31,19 @@ namespace DAL
 
 
 
-        public ApplicationDbContext(DbContextOptions options) : base(options)
-        { }
+        public ApplicationDbContext(DbContextOptions options, ITenantInfo tenantInfo) : base(options)
+        {
+            TenantInfo = tenantInfo;
+        }
 
-
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (TenantInfo != null)
+            {
+                optionsBuilder.UseSqlServer(TenantInfo.ConnectionString, b => b.MigrationsAssembly("QuickApp"));
+            }
+            base.OnConfiguring(optionsBuilder);
+        }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

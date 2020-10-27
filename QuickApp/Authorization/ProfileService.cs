@@ -47,6 +47,8 @@ namespace QuickApp.Authorization
             if (user.Configuration != null)
                 claims.Add(new Claim(PropertyConstants.Configuration, user.Configuration));
 
+            claims.Add(new Claim("__tenant__", "initech"));
+
             context.IssuedClaims = claims;
         }
 

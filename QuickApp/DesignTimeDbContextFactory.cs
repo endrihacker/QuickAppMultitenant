@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Finbuckle.MultiTenant;
 
 namespace QuickApp
 {
@@ -27,10 +28,11 @@ namespace QuickApp
                 .Build();
 
             var builder = new DbContextOptionsBuilder<ApplicationDbContext>();
+            var tenantInfo = new TenantInfo { ConnectionString = configuration["ConnectionStrings:DefaultConnection"] };
 
             builder.UseSqlServer(configuration["ConnectionStrings:DefaultConnection"], b => b.MigrationsAssembly("QuickApp"));
 
-            return new ApplicationDbContext(builder.Options);
+            return new ApplicationDbContext(builder.Options, tenantInfo);
         }
     }
 }

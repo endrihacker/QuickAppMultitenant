@@ -89,6 +89,7 @@ namespace QuickApp
 
                     AllowedScopes = {
                         ApiName
+                        , "__tenant__"
                     }
                 }
             };

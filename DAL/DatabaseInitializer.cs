@@ -52,8 +52,8 @@ namespace DAL
                 await EnsureRoleAsync(adminRoleName, "Default administrator", ApplicationPermissions.GetAllPermissionValues());
                 await EnsureRoleAsync(userRoleName, "Default user", new string[] { });
 
-                await CreateUserAsync("admin", "tempP@ss123", "Inbuilt Administrator", "admin@ebenmonney.com", "+1 (123) 000-0000", new string[] { adminRoleName });
-                await CreateUserAsync("user", "tempP@ss123", "Inbuilt Standard User", "user@ebenmonney.com", "+1 (123) 000-0001", new string[] { userRoleName });
+                await CreateUserAsync("admin", "tempP@ss1234", "Inbuilt Administrator", "admin@ebenmonney.com", "+1 (123) 000-0000", new string[] { adminRoleName });
+                await CreateUserAsync("user", "tempP@ss1234", "Inbuilt Standard User", "user@ebenmonney.com", "+1 (123) 000-0001", new string[] { userRoleName });
 
                 _logger.LogInformation("Inbuilt account generation completed");
             }
@@ -66,7 +66,7 @@ namespace DAL
 
                 Customer cust_1 = new Customer
                 {
-                    Name = "Ebenezer Monney",
+                    Name = "Finbuckle Monney",
                     Email = "contact@ebenmonney.com",
                     Gender = Gender.Male,
                     DateCreated = DateTime.UtcNow,

@@ -13,10 +13,12 @@ using QuickApp.ViewModels;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using QuickApp.Helpers;
+using Finbuckle.MultiTenant;
 
 namespace QuickApp.Controllers
 {
     [Route("api/[controller]")]
+    [Route("{__tenant__}/api/[controller]")]
     public class CustomerController : ControllerBase
     {
         private readonly IMapper _mapper;
@@ -41,6 +43,22 @@ namespace QuickApp.Controllers
         {
             var allCustomers = _unitOfWork.Customers.GetAllCustomersData();
             return Ok(_mapper.Map<IEnumerable<CustomerViewModel>>(allCustomers));
+        }
+
+        [HttpGet("tenantinfo")]
+        public IActionResult GetTenantInfo()
+        {
+            var ti = HttpContext.GetMultiTenantContext<ExtendedTenantInfo>()?.TenantInfo;
+            string tiData = "NO TENANT!";
+            if (ti != null)
+            {
+                tiData = "ID: " + ti.Id + Environment.NewLine + "Name: " + ti.Name + Environment.NewLine + "Connection String: " + ti.ConnectionString
+                    + Environment.NewLine + "Bool: " + ti.TestBool
+                    + Environment.NewLine + "String:  " + ti.TestString
+                    + Environment.NewLine + "DateTime: " + ti.TestDateTime;
+            }           
+
+            return Ok(tiData);
         }
 
 

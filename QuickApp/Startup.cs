@@ -26,6 +26,8 @@ using System;
 using System.Collections.Generic;
 using AppPermissions = DAL.Core.ApplicationPermissions;
 using Finbuckle.MultiTenant;
+using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace QuickApp
 {
@@ -56,10 +58,20 @@ namespace QuickApp
             // Add multitenacy -> be careful to register multitenant aware components after multitenancy is added
             services.AddMultiTenant<ExtendedTenantInfo>()
                     .WithConfigurationStore()
-                    //.WithEFCoreStore<MultiTenantStoreDbContext, ExtendedTenantInfo>()
-                    .WithClaimStrategy()
-                    .WithRouteStrategy()
-                    .WithStaticStrategy("finbuckle");   // optional for default strategy after all other strategies registered
+                    //.WithEFCoreStore<MultiTenantStoreDbContext, ExtendedTenantInfo>()                    
+                    .WithDelegateStrategy(async context =>
+                    {
+                        string tenantId = ((Microsoft.AspNetCore.Http.HttpContext)context).User?.FindFirst("__tenant__")?.Value;
+                        return await Task.FromResult<string>(tenantId);
+                    })
+                    .WithDelegateStrategy(async context =>
+                    {
+                        ((Microsoft.AspNetCore.Http.HttpContext)context).Request.Headers.TryGetValue("tenant", out Microsoft.Extensions.Primitives.StringValues tenantId);  // get tenant from header "tenant"
+                        return await System.Threading.Tasks.Task.FromResult(tenantId.ToString()); // ignore await warning or use await Task.FromResult(...)
+                    });
+                    //.WithClaimStrategy()
+                    //.WithRouteStrategy()
+                    //.WithStaticStrategy("finbuckle");   // optional for default strategy after all other strategies registered
 
             //services.AddMultiTenant<TenantInfo>()
             //        .WithConfigurationStore()
@@ -106,6 +118,7 @@ namespace QuickApp
                 .AddInMemoryApiResources(IdentityServerConfig.GetApiResources())
                 .AddInMemoryClients(IdentityServerConfig.GetClients())
                 .AddAspNetIdentity<ApplicationUser>()
+                .AddAuthorizeInteractionResponseGenerator<AuthorizeInteractionResponsHandler>()
                 .AddProfileService<ProfileService>();
 
 
@@ -211,9 +224,6 @@ namespace QuickApp
 
             app.UseRouting();
 
-            // Use Multitenancy be careful to add this after UseRouting
-            app.UseMultiTenant();
-
             app.UseCors(builder => builder
                 .AllowAnyOrigin()
                 .AllowAnyHeader()
@@ -221,6 +231,12 @@ namespace QuickApp
 
             app.UseIdentityServer();
             app.UseAuthorization();
+
+
+            // Use Multitenancy be careful to add this after UseRouting
+            app.UseMultiTenant();
+
+
 
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -238,7 +254,15 @@ namespace QuickApp
                     pattern: "{__tenant__=}/{controller}/{action=Index}/{id?}");
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller}/{action=Index}/{id?}");
+                    pattern: "{controller}/{action=Index}/{id?}");  // to ommit the need of Authorize attribute in every COntroller use RequireAuthorization
+
+                //
+                //.RequireAuthorization(
+                //    new AuthorizeAttribute
+                //    {
+                //        AuthenticationSchemes = IdentityServerAuthenticationDefaults.AuthenticationScheme
+                //    }
+                //);
             });
 
             app.UseSpa(spa =>
@@ -262,5 +286,6 @@ namespace QuickApp
             //SetupStore(app.ApplicationServices);
 
         }
+
     }
 }
